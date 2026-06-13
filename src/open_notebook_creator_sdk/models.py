@@ -25,22 +25,25 @@ class ModelRole(BaseModel):
     model: str
     config: Dict[str, Any] = Field(default_factory=dict, exclude=True, repr=False)
 
-    def create_language(self):
+    def create_language(self, **extra_config: Any):
         """Build a LangChain-compatible chat model via Esperanto.
 
-        Requires the optional ``esperanto`` extra. Merges any ``extra_config``
-        the caller passes (e.g. ``structured={"type": "json"}``)."""
+        Requires the optional ``esperanto`` extra. ``extra_config`` is merged over
+        the resolved credential config, e.g.
+        ``role.create_language(structured={"type": "json"}, max_tokens=4000)``."""
         from esperanto import AIFactory  # optional extra
 
+        config = {**self.config, **extra_config}
         return AIFactory.create_language(
-            self.provider, self.model, config=self.config
+            self.provider, self.model, config=config
         ).to_langchain()
 
-    def create_text_to_speech(self):
+    def create_text_to_speech(self, **extra_config: Any):
         from esperanto import AIFactory  # optional extra
 
+        config = {**self.config, **extra_config}
         return AIFactory.create_text_to_speech(
-            self.provider, self.model, config=self.config
+            self.provider, self.model, config=config
         )
 
 
