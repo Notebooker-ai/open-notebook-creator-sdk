@@ -17,6 +17,7 @@ from .chart_spec_v1 import ChartSpecV1
 from .flashcards_v1 import FlashcardsV1
 from .infographic_v1 import InfographicV1
 from .mindmap_v1 import MindmapV1
+from .textbook_v1 import TextbookV1
 
 SCHEMA_REGISTRY: Dict[str, Type[BaseModel]] = {
     "flashcards.v1": FlashcardsV1,
@@ -24,6 +25,7 @@ SCHEMA_REGISTRY: Dict[str, Type[BaseModel]] = {
     "infographic.v1": InfographicV1,
     "mindmap.v1": MindmapV1,
     "audio.v1": AudioV1,
+    "textbook.v1": TextbookV1,
 }
 
 
@@ -47,4 +49,5 @@ __all__ = [
     "InfographicV1",
     "MindmapV1",
     "AudioV1",
+    "TextbookV1",
 ]
