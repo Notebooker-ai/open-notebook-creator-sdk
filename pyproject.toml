@@ -1,6 +1,6 @@
 [project]
 name = "open-notebook-creator-sdk"
-version = "0.1.0"
+version = "0.2.0"
 license = "MIT"
 description = "Normalized plugin contract for Open Notebook 'Creation' multimodal generators"
 readme = "README.md"

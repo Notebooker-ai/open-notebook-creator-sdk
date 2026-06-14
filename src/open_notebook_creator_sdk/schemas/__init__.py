@@ -15,10 +15,12 @@ from pydantic import BaseModel
 from .audio_v1 import AudioV1
 from .chart_spec_v1 import ChartSpecV1
 from .flashcards_v1 import FlashcardsV1
+from .infographic_v1 import InfographicV1
 
 SCHEMA_REGISTRY: Dict[str, Type[BaseModel]] = {
     "flashcards.v1": FlashcardsV1,
     "chart_spec.v1": ChartSpecV1,
+    "infographic.v1": InfographicV1,
     "audio.v1": AudioV1,
 }
 
@@ -40,5 +42,6 @@ __all__ = [
     "validate_artifact_data",
     "FlashcardsV1",
     "ChartSpecV1",
+    "InfographicV1",
     "AudioV1",
 ]
