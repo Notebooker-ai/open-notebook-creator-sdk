@@ -61,6 +61,24 @@ def test_unknown_schema_raises():
         validate_artifact_data("does.not.exist", {})
 
 
+def test_mindmap_schema_roundtrip():
+    data = {
+        "title": "Photosynthesis",
+        "mermaid_syntax": "mindmap\n  root((Photosynthesis))\n    Light\n    Dark",
+        "description": "How plants convert light to energy",
+    }
+    obj = validate_artifact_data("mindmap.v1", data)
+    assert obj.title == "Photosynthesis"
+    assert obj.mermaid_syntax.startswith("mindmap")
+
+
+def test_mindmap_schema_rejects_extra_fields():
+    with pytest.raises(Exception):
+        validate_artifact_data(
+            "mindmap.v1", {"title": "T", "mermaid_syntax": "mindmap", "bogus": 1}
+        )
+
+
 def test_codegen_emits_validators():
     code = generate()
     assert "FlashcardsV1Schema" in code
