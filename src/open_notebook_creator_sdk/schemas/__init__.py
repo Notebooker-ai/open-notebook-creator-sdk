@@ -14,11 +14,15 @@ from pydantic import BaseModel
 
 from .audio_v1 import AudioV1
 from .chart_spec_v1 import ChartSpecV1
+from .essay_v1 import EssayV1
 from .flashcards_v1 import FlashcardsV1
 from .infographic_v1 import InfographicV1
 from .infographic_v2 import InfographicV2
 from .mindmap_v1 import MindmapV1
+from .slideshow_v1 import SlideshowV1
+from .studyguide_v1 import StudyGuideV1
 from .textbook_v1 import TextbookV1
+from .timeline_v1 import TimelineV1
 
 SCHEMA_REGISTRY: Dict[str, Type[BaseModel]] = {
     "flashcards.v1": FlashcardsV1,
@@ -28,6 +32,10 @@ SCHEMA_REGISTRY: Dict[str, Type[BaseModel]] = {
     "mindmap.v1": MindmapV1,
     "audio.v1": AudioV1,
     "textbook.v1": TextbookV1,
+    "essay.v1": EssayV1,
+    "studyguide.v1": StudyGuideV1,
+    "slideshow.v1": SlideshowV1,
+    "timeline.v1": TimelineV1,
 }
 
 
@@ -53,4 +61,8 @@ __all__ = [
     "MindmapV1",
     "AudioV1",
     "TextbookV1",
+    "EssayV1",
+    "StudyGuideV1",
+    "SlideshowV1",
+    "TimelineV1",
 ]
