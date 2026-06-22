@@ -6,7 +6,7 @@ subclass via the ``open_notebook.creators`` entry-point group.
 
 from __future__ import annotations
 
-from .creator import BaseCreator, CreatorManifest, ModelRoleSpec
+from .creator import BaseCreator, CreatorManifest, CreatorView, ModelRoleSpec
 from .models import (
     ContentBundle,
     CreationError,
@@ -22,7 +22,7 @@ from .schemas import (
     validate_artifact_data,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 #: Entry-point group plugins register under (used for dev discovery / warnings).
 ENTRY_POINT_GROUP = "open_notebook.creators"
@@ -33,6 +33,7 @@ __all__ = [
     # contract
     "BaseCreator",
     "CreatorManifest",
+    "CreatorView",
     "ModelRoleSpec",
     # DTOs
     "ModelRole",

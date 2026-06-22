@@ -32,6 +32,30 @@ class ModelRoleSpec(BaseModel):
     description: str = ""
 
 
+class CreatorView(BaseModel):
+    """Points at a creator's self-contained HTML *view bundle*, shipped inside the
+    plugin package, that owns rendering its artifacts.
+
+    The host serves ``entry`` (``GET /creation/creators/{key}/view``) and renders it
+    in a **sandboxed** iframe (opaque origin — it cannot read host state), then posts
+    the artifact in via ``postMessage``:
+
+        {type: "open-notebook:artifact", schema_id, name, data, config, theme}
+
+    The bundle should ``postMessage({type: "open-notebook:ready"})`` to its parent
+    once listening (the host also posts on iframe ``load``, covering either order),
+    then **dispatch on ``schema_id``**. Crucially, a bundle MUST keep a renderer for
+    every ``schema_id`` the creator has *ever* emitted, so a newer plugin still
+    displays artifacts created under an older schema version. The bundle is
+    display-only: it never writes back to the host API.
+    """
+
+    entry: str = Field(
+        ...,
+        description="package-relative path to the view HTML, e.g. 'view/index.html'",
+    )
+
+
 class CreatorManifest(BaseModel):
     """Static description of a creator. Surfaced to the frontend via
     ``GET /creation/creators`` to drive nav, config forms, and model pickers."""
@@ -48,6 +72,10 @@ class CreatorManifest(BaseModel):
     )
     icon: Optional[str] = None
     has_custom_form: bool = False
+    view: Optional[CreatorView] = Field(
+        default=None,
+        description="self-contained HTML view bundle the plugin ships and the host iframes",
+    )
 
 
 class BaseCreator(ABC):

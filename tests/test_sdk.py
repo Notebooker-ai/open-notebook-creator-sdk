@@ -111,6 +111,27 @@ class _DummyCreator(BaseCreator):
         )
 
 
+def test_manifest_view_roundtrips():
+    from open_notebook_creator_sdk import CreatorManifest, CreatorView
+
+    m = CreatorManifest(
+        key="k",
+        name="N",
+        version="1.0.0",
+        sdk_compat=">=0.4,<1",
+        emits=["flashcards.v1"],
+        view=CreatorView(entry="view/index.html"),
+    )
+    assert m.view is not None and m.view.entry == "view/index.html"
+    # absent by default — creators without a bundle stay valid
+    m2 = CreatorManifest(
+        key="k", name="N", version="1.0.0", sdk_compat=">=0.1,<1", emits=["x"]
+    )
+    assert m2.view is None
+    # accepts a plain dict too (host reads it defensively)
+    assert "view/index.html" in m.model_dump_json()
+
+
 def test_dummy_creator_compliant():
     creator = _DummyCreator()
     assert_creator_compliant(creator)
