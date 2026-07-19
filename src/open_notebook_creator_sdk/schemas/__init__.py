@@ -16,6 +16,7 @@ from .audio_v1 import AudioV1
 from .chart_spec_v1 import ChartSpecV1
 from .essay_v1 import EssayV1
 from .flashcards_v1 import FlashcardsV1
+from .flint_v1 import FlintV1
 from .infographic_v1 import InfographicV1
 from .infographic_v2 import InfographicV2
 from .mindmap_v1 import MindmapV1
@@ -28,6 +29,7 @@ from .wiki_v1 import WikiSourceRefV1, WikiTopicV1, WikiV1
 SCHEMA_REGISTRY: Dict[str, Type[BaseModel]] = {
     "flashcards.v1": FlashcardsV1,
     "chart_spec.v1": ChartSpecV1,
+    "flint.v1": FlintV1,
     "infographic.v1": InfographicV1,
     "infographic.v2": InfographicV2,
     "mindmap.v1": MindmapV1,
@@ -58,6 +60,7 @@ __all__ = [
     "validate_artifact_data",
     "FlashcardsV1",
     "ChartSpecV1",
+    "FlintV1",
     "InfographicV1",
     "InfographicV2",
     "MindmapV1",
