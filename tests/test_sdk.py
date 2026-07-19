@@ -79,6 +79,39 @@ def test_mindmap_schema_rejects_extra_fields():
         )
 
 
+def test_wiki_schema_roundtrip():
+    data = {
+        "title": "My Wine Wiki",
+        "description": "Topics distilled from my saved sources",
+        "topics": [
+            {
+                "name": "Rosé Wine",
+                "slug": "rose-wine",
+                "filename": "Rosé Wine.md",
+                "summary": "Pink wine made from red grapes.",
+                "body_markdown": "Rosé is made by limiting skin contact.[^s1] See [[Provence]].",
+                "sources": [
+                    {
+                        "marker": "s1",
+                        "title": "Rosé thread",
+                        "url": "https://example.com/rose",
+                        "source_id": "source:abc",
+                    }
+                ],
+            }
+        ],
+        "index_filename": "Wiki Index.md",
+    }
+    obj = validate_artifact_data("wiki.v1", data)
+    assert obj.topics[0].sources[0].marker == "s1"
+    assert obj.index_filename == "Wiki Index.md"
+
+
+def test_wiki_schema_rejects_extra_fields():
+    with pytest.raises(Exception):
+        validate_artifact_data("wiki.v1", {"title": "T", "topics": [], "bogus": 1})
+
+
 def test_codegen_emits_validators():
     code = generate()
     assert "FlashcardsV1Schema" in code
