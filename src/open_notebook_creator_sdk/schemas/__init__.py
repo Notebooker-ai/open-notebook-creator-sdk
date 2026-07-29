@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from .audio_v1 import AudioV1
 from .chart_spec_v1 import ChartSpecV1
+from .counterpoints_v1 import CounterpointIssueV1, CounterpointPairV1, CounterpointsV1
 from .essay_v1 import EssayV1
 from .flashcards_v1 import FlashcardsV1
 from .flint_v1 import FlintV1
@@ -30,6 +31,7 @@ from .wiki_v1 import WikiSourceRefV1, WikiTopicV1, WikiV1
 SCHEMA_REGISTRY: Dict[str, Type[BaseModel]] = {
     "flashcards.v1": FlashcardsV1,
     "chart_spec.v1": ChartSpecV1,
+    "counterpoints.v1": CounterpointsV1,
     "flint.v1": FlintV1,
     "infographic.v1": InfographicV1,
     "infographic.v2": InfographicV2,
@@ -62,6 +64,9 @@ __all__ = [
     "validate_artifact_data",
     "FlashcardsV1",
     "ChartSpecV1",
+    "CounterpointsV1",
+    "CounterpointIssueV1",
+    "CounterpointPairV1",
     "FlintV1",
     "InfographicV1",
     "InfographicV2",
