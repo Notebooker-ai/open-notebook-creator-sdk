@@ -1,10 +1,10 @@
 """open-notebook-creator-sdk: the normalized contract for Open Notebook creators.
 
 Plugins depend on this package, subclass :class:`BaseCreator`, and expose the
-subclass via the ``open_notebook.creators`` entry-point group.
+result via the ``open_notebook.creators`` entry point group. The host builds a
+:class:`CreationRequest`, the creator returns a :class:`CreationResult`, and the
+``data`` payload validates against an immutable schema in :mod:`.schemas`.
 """
-
-from __future__ import annotations
 
 from .creator import BaseCreator, CreatorManifest, CreatorView, ModelRoleSpec
 from .models import (
@@ -16,35 +16,24 @@ from .models import (
     CreationStatus,
     ModelRole,
 )
-from .schemas import (
-    SCHEMA_REGISTRY,
-    get_schema,
-    validate_artifact_data,
-)
 
-__version__ = "0.6.0"
-
-#: Entry-point group plugins register under (used for dev discovery / warnings).
+#: Entry-point group creator packages register under.
 ENTRY_POINT_GROUP = "open_notebook.creators"
 
+__version__ = "0.7.0"
+
 __all__ = [
-    "__version__",
-    "ENTRY_POINT_GROUP",
-    # contract
     "BaseCreator",
     "CreatorManifest",
     "CreatorView",
     "ModelRoleSpec",
-    # DTOs
-    "ModelRole",
     "ContentBundle",
+    "CreationError",
     "CreationFile",
     "CreationRequest",
     "CreationResult",
-    "CreationError",
     "CreationStatus",
-    # schemas
-    "SCHEMA_REGISTRY",
-    "get_schema",
-    "validate_artifact_data",
+    "ModelRole",
+    "ENTRY_POINT_GROUP",
+    "__version__",
 ]
