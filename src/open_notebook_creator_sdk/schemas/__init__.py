@@ -21,6 +21,7 @@ from .infographic_v1 import InfographicV1
 from .infographic_v2 import InfographicV2
 from .mindmap_v1 import MindmapV1
 from .slideshow_v1 import SlideshowV1
+from .socratic_v1 import SocraticV1
 from .studyguide_v1 import StudyGuideV1
 from .textbook_v1 import TextbookV1
 from .timeline_v1 import TimelineV1
@@ -38,6 +39,7 @@ SCHEMA_REGISTRY: Dict[str, Type[BaseModel]] = {
     "essay.v1": EssayV1,
     "studyguide.v1": StudyGuideV1,
     "slideshow.v1": SlideshowV1,
+    "socratic.v1": SocraticV1,
     "timeline.v1": TimelineV1,
     "wiki.v1": WikiV1,
 }
@@ -69,6 +71,7 @@ __all__ = [
     "EssayV1",
     "StudyGuideV1",
     "SlideshowV1",
+    "SocraticV1",
     "TimelineV1",
     "WikiV1",
     "WikiTopicV1",
