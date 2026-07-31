@@ -26,6 +26,7 @@ from .socratic_v1 import SocraticV1
 from .studyguide_v1 import StudyGuideV1
 from .textbook_v1 import TextbookV1
 from .timeline_v1 import TimelineV1
+from .website_v1 import WebsiteV1
 from .wiki_v1 import WikiSourceRefV1, WikiTopicV1, WikiV1
 
 SCHEMA_REGISTRY: Dict[str, Type[BaseModel]] = {
@@ -43,6 +44,7 @@ SCHEMA_REGISTRY: Dict[str, Type[BaseModel]] = {
     "slideshow.v1": SlideshowV1,
     "socratic.v1": SocraticV1,
     "timeline.v1": TimelineV1,
+    "website.v1": WebsiteV1,
     "wiki.v1": WikiV1,
 }
 
@@ -78,6 +80,7 @@ __all__ = [
     "SlideshowV1",
     "SocraticV1",
     "TimelineV1",
+    "WebsiteV1",
     "WikiV1",
     "WikiTopicV1",
     "WikiSourceRefV1",
