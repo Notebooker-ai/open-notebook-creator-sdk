@@ -20,6 +20,7 @@ from .flashcards_v1 import FlashcardsV1
 from .flint_v1 import FlintV1
 from .infographic_v1 import InfographicV1
 from .infographic_v2 import InfographicV2
+from .itinerary_v1 import ItineraryDayV1, ItineraryStopV1, ItineraryV1
 from .mindmap_v1 import MindmapV1
 from .story_v1 import (
     StoryCharacter,
@@ -43,6 +44,7 @@ SCHEMA_REGISTRY: Dict[str, Type[BaseModel]] = {
     "flint.v1": FlintV1,
     "infographic.v1": InfographicV1,
     "infographic.v2": InfographicV2,
+    "itinerary.v1": ItineraryV1,
     "mindmap.v1": MindmapV1,
     "story.v1": StoryV1,
     "audio.v1": AudioV1,
@@ -80,6 +82,9 @@ __all__ = [
     "FlintV1",
     "InfographicV1",
     "InfographicV2",
+    "ItineraryV1",
+    "ItineraryDayV1",
+    "ItineraryStopV1",
     "MindmapV1",
     "AudioV1",
     "TextbookV1",
