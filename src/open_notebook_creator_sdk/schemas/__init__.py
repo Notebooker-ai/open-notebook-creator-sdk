@@ -21,6 +21,13 @@ from .flint_v1 import FlintV1
 from .infographic_v1 import InfographicV1
 from .infographic_v2 import InfographicV2
 from .mindmap_v1 import MindmapV1
+from .story_v1 import (
+    StoryCharacter,
+    StoryChoice,
+    StoryPage,
+    StorySetting,
+    StoryV1,
+)
 from .slideshow_v1 import SlideshowV1
 from .socratic_v1 import SocraticV1
 from .studyguide_v1 import StudyGuideV1
@@ -37,6 +44,7 @@ SCHEMA_REGISTRY: Dict[str, Type[BaseModel]] = {
     "infographic.v1": InfographicV1,
     "infographic.v2": InfographicV2,
     "mindmap.v1": MindmapV1,
+    "story.v1": StoryV1,
     "audio.v1": AudioV1,
     "textbook.v1": TextbookV1,
     "essay.v1": EssayV1,
@@ -78,6 +86,11 @@ __all__ = [
     "EssayV1",
     "StudyGuideV1",
     "SlideshowV1",
+    "StoryV1",
+    "StoryPage",
+    "StoryChoice",
+    "StoryCharacter",
+    "StorySetting",
     "SocraticV1",
     "TimelineV1",
     "WebsiteV1",

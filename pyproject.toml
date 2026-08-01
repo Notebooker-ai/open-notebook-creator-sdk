@@ -1,6 +1,6 @@
 [project]
 name = "open-notebook-creator-sdk"
-version = "0.7.0"
+version = "0.8.0"
 license = "MIT"
 description = "Normalized plugin contract for Open Notebook 'Creation' multimodal generators"
 readme = "README.md"
@@ -13,6 +13,9 @@ dependencies = [
 [project.optional-dependencies]
 esperanto = [
     "esperanto>=2.19",
+]
+image = [
+    "httpx>=0.27",
 ]
 dev = [
     "pytest>=8.0",

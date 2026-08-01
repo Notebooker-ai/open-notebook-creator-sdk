@@ -46,6 +46,64 @@ class ModelRole(BaseModel):
             self.provider, self.model, config=config
         )
 
+    def create_image(self, **extra_config: Any) -> "ImageGenerationModel":
+        """Build an image-generation client speaking the OpenAI Images API
+        (``POST {base_url}/images/generations``, ``response_format=b64_json``).
+
+        Esperanto has no image modality, so this uses its own thin transport
+        (requires the optional ``httpx`` dependency). Works against OpenAI and
+        any OpenAI-compatible gateway. ``config`` must provide ``api_key`` and
+        may provide ``base_url`` (default ``https://api.openai.com/v1``)."""
+        config = {**self.config, **extra_config}
+        return ImageGenerationModel(
+            provider=self.provider, model=self.model, config=config
+        )
+
+
+class ImageGenerationModel:
+    """Minimal async client for the OpenAI-shaped Images API."""
+
+    def __init__(self, provider: str, model: str, config: Dict[str, Any]):
+        self.provider = provider
+        self.model = model
+        self._api_key = config.get("api_key")
+        self._base_url = (config.get("base_url") or "https://api.openai.com/v1").rstrip("/")
+        self._timeout = float(config.get("timeout", 120))
+
+    async def agenerate_image(self, prompt: str, size: str = "1024x1024") -> bytes:
+        """Generate one image; returns raw image bytes. Raises on any failure."""
+        import base64
+
+        import httpx  # optional dependency of image-consuming creators
+
+        headers = {"Content-Type": "application/json"}
+        if self._api_key:
+            headers["Authorization"] = f"Bearer {self._api_key}"
+        payload = {
+            "model": self.model,
+            "prompt": prompt,
+            "n": 1,
+            "size": size,
+            "response_format": "b64_json",
+        }
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            resp = await client.post(
+                f"{self._base_url}/images/generations", json=payload, headers=headers
+            )
+            resp.raise_for_status()
+            body = resp.json()
+        data = (body.get("data") or [{}])[0]
+        b64 = data.get("b64_json")
+        if b64:
+            return base64.b64decode(b64)
+        url = data.get("url")
+        if url:
+            async with httpx.AsyncClient(timeout=self._timeout) as client:
+                img = await client.get(url)
+                img.raise_for_status()
+                return img.content
+        raise ValueError("image response contained neither b64_json nor url")
+
 
 class ContentBundle(BaseModel):
     """Notebook content assembled (and possibly condensed) by the host.
