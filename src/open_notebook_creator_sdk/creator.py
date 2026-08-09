@@ -76,6 +76,18 @@ class CreatorManifest(BaseModel):
         default=None,
         description="self-contained HTML view bundle the plugin ships and the host iframes",
     )
+    #: What a useful "additional instructions" text for this artifact decides — a
+    #: noun phrase the host injects into its suggest-instructions prompt, e.g.
+    #: "which chronological thread to trace, the time span to cover, and how to
+    #: group events into eras". Not shown to end users verbatim.
+    suggestion_hint: Optional[str] = Field(
+        default=None,
+        description=(
+            "noun phrase describing what a useful 'additional instructions' text "
+            "for this artifact decides; steers the host's suggest-instructions "
+            "prompt and is not shown to end users verbatim"
+        ),
+    )
 
 
 class BaseCreator(ABC):
