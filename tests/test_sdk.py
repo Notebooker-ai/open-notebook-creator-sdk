@@ -176,3 +176,54 @@ def test_dummy_creator_compliant():
         )
     )
     assert_result_compliant(creator, result)
+
+
+@pytest.mark.asyncio
+async def test_image_client_forwards_attribution_headers(monkeypatch):
+    """The host injects per-user headers (X-User-Id) into model config; the
+    image transport must send them — the Notebooker gateway 400s without."""
+    from open_notebook_creator_sdk.models import ImageGenerationModel
+
+    captured = {}
+
+    class _FakeResponse:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            import base64
+
+            return {"data": [{"b64_json": base64.b64encode(b"png").decode()}]}
+
+    class _FakeClient:
+        def __init__(self, timeout=None):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, url, json=None, headers=None):
+            captured["url"] = url
+            captured["headers"] = headers
+            return _FakeResponse()
+
+    import httpx
+
+    monkeypatch.setattr(httpx, "AsyncClient", _FakeClient)
+
+    model = ImageGenerationModel(
+        provider="openai_compatible",
+        model="Notebooker Image",
+        config={
+            "api_key": "k",
+            "base_url": "https://ai.example/v1",
+            "extra_headers": {"X-User-Id": "user:42"},
+        },
+    )
+    out = await model.agenerate_image("a fox", size="1024x1024")
+    assert out == b"png"
+    assert captured["headers"]["X-User-Id"] == "user:42"
+    assert captured["headers"]["Authorization"] == "Bearer k"

@@ -69,6 +69,14 @@ class ImageGenerationModel:
         self._api_key = config.get("api_key")
         self._base_url = (config.get("base_url") or "https://api.openai.com/v1").rstrip("/")
         self._timeout = float(config.get("timeout", 120))
+        # Per-user attribution headers the host injects into every model
+        # config (e.g. X-User-Id, which the Notebooker gateway REQUIRES —
+        # without it every image call 400s "Missing X-User-Id header").
+        # Esperanto's language clients forward these; this transport must too.
+        self._extra_headers: Dict[str, str] = {
+            **(config.get("default_headers") or {}),
+            **(config.get("extra_headers") or {}),
+        }
 
     async def agenerate_image(self, prompt: str, size: str = "1024x1024") -> bytes:
         """Generate one image; returns raw image bytes. Raises on any failure."""
@@ -76,7 +84,7 @@ class ImageGenerationModel:
 
         import httpx  # optional dependency of image-consuming creators
 
-        headers = {"Content-Type": "application/json"}
+        headers = {"Content-Type": "application/json", **self._extra_headers}
         if self._api_key:
             headers["Authorization"] = f"Bearer {self._api_key}"
         payload = {

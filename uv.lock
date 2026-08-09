@@ -125,7 +125,7 @@ wheels = [
 
 [[package]]
 name = "open-notebook-creator-sdk"
-version = "0.5.0"
+version = "0.8.1"
 source = { editable = "." }
 dependencies = [
     { name = "packaging" },
@@ -140,16 +140,20 @@ dev = [
 esperanto = [
     { name = "esperanto" },
 ]
+image = [
+    { name = "httpx" },
+]
 
 [package.metadata]
 requires-dist = [
     { name = "esperanto", marker = "extra == 'esperanto'", specifier = ">=2.19" },
+    { name = "httpx", marker = "extra == 'image'", specifier = ">=0.27" },
     { name = "packaging", specifier = ">=23.0" },
     { name = "pydantic", specifier = ">=2.9" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
 ]
-provides-extras = ["esperanto", "dev"]
+provides-extras = ["esperanto", "image", "dev"]
 
 [[package]]
 name = "packaging"
