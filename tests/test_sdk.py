@@ -187,6 +187,8 @@ async def test_image_client_forwards_attribution_headers(monkeypatch):
     captured = {}
 
     class _FakeResponse:
+        status_code = 200
+
         def raise_for_status(self):
             pass
 
@@ -227,3 +229,73 @@ async def test_image_client_forwards_attribution_headers(monkeypatch):
     assert out == b"png"
     assert captured["headers"]["X-User-Id"] == "user:42"
     assert captured["headers"]["Authorization"] == "Bearer k"
+
+
+@pytest.mark.asyncio
+async def test_image_client_retries_5xx_then_succeeds(monkeypatch):
+    """Diffusion backends flake; a 500 must be retried with backoff instead of
+    failing the whole creation. 4xx must fail fast."""
+    import base64
+
+    import httpx
+
+    from open_notebook_creator_sdk.models import ImageGenerationModel
+
+    posts = []
+
+    def make_client(statuses):
+        class _Resp:
+            def __init__(self, status):
+                self.status_code = status
+
+            def raise_for_status(self):
+                if self.status_code >= 400:
+                    raise httpx.HTTPStatusError(
+                        f"{self.status_code}", request=None, response=self
+                    )
+
+            def json(self):
+                return {"data": [{"b64_json": base64.b64encode(b"img").decode()}]}
+
+        class _Client:
+            def __init__(self, timeout=None):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *a):
+                return False
+
+            async def post(self, url, json=None, headers=None):
+                posts.append(url)
+                return _Resp(statuses[min(len(posts) - 1, len(statuses) - 1)])
+
+        return _Client
+
+    async def no_sleep(_):
+        pass
+
+    monkeypatch.setattr("asyncio.sleep", no_sleep)
+
+    # 500, 500, then 200 -> succeeds on the third attempt.
+    monkeypatch.setattr(httpx, "AsyncClient", make_client([500, 500, 200]))
+    model = ImageGenerationModel(
+        provider="openai_compatible", model="m", config={"api_key": "k"}
+    )
+    assert await model.agenerate_image("a fox") == b"img"
+    assert len(posts) == 3
+
+    # Persistent 500 -> raises after max attempts.
+    posts.clear()
+    monkeypatch.setattr(httpx, "AsyncClient", make_client([500]))
+    with pytest.raises(httpx.HTTPStatusError):
+        await model.agenerate_image("a fox")
+    assert len(posts) == 3
+
+    # 400 -> immediate failure, exactly one request.
+    posts.clear()
+    monkeypatch.setattr(httpx, "AsyncClient", make_client([400]))
+    with pytest.raises(httpx.HTTPStatusError):
+        await model.agenerate_image("a fox")
+    assert len(posts) == 1

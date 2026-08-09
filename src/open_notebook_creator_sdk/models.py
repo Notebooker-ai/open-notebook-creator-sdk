@@ -78,8 +78,17 @@ class ImageGenerationModel:
             **(config.get("extra_headers") or {}),
         }
 
+    _MAX_ATTEMPTS = 3
+    _BACKOFF_BASE_S = 1.0
+
     async def agenerate_image(self, prompt: str, size: str = "1024x1024") -> bytes:
-        """Generate one image; returns raw image bytes. Raises on any failure."""
+        """Generate one image; returns raw image bytes.
+
+        Retries 5xx responses and transport errors with exponential backoff —
+        diffusion backends flake transiently and a background image is not
+        worth failing a whole creation over. 4xx raises immediately (a bad
+        request won't get better by retrying)."""
+        import asyncio
         import base64
 
         import httpx  # optional dependency of image-consuming creators
@@ -94,12 +103,32 @@ class ImageGenerationModel:
             "size": size,
             "response_format": "b64_json",
         }
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            resp = await client.post(
-                f"{self._base_url}/images/generations", json=payload, headers=headers
-            )
-            resp.raise_for_status()
-            body = resp.json()
+        body = None
+        last_error: Exception | None = None
+        for attempt in range(self._MAX_ATTEMPTS):
+            if attempt:
+                await asyncio.sleep(self._BACKOFF_BASE_S * 2 ** (attempt - 1))
+            try:
+                async with httpx.AsyncClient(timeout=self._timeout) as client:
+                    resp = await client.post(
+                        f"{self._base_url}/images/generations",
+                        json=payload,
+                        headers=headers,
+                    )
+                if resp.status_code >= 500:
+                    resp.raise_for_status()  # raises HTTPStatusError -> retried
+                resp.raise_for_status()  # 4xx raises here and is NOT retried
+                body = resp.json()
+                break
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code < 500:
+                    raise
+                last_error = e
+            except httpx.TransportError as e:
+                last_error = e
+        if body is None:
+            assert last_error is not None
+            raise last_error
         data = (body.get("data") or [{}])[0]
         b64 = data.get("b64_json")
         if b64:
