@@ -299,3 +299,108 @@ async def test_image_client_retries_5xx_then_succeeds(monkeypatch):
     with pytest.raises(httpx.HTTPStatusError):
         await model.agenerate_image("a fox")
     assert len(posts) == 1
+
+
+@pytest.mark.asyncio
+async def test_image_edit_sends_multipart_references(monkeypatch):
+    """agenerate_image_edit must hit /images/edits with the reference bytes as
+    multipart file parts and the usual auth/attribution headers."""
+    import base64
+
+    import httpx
+
+    from open_notebook_creator_sdk.models import ImageGenerationModel
+
+    captured = {}
+
+    class _FakeResponse:
+        status_code = 200
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"data": [{"b64_json": base64.b64encode(b"edited").decode()}]}
+
+    class _FakeClient:
+        def __init__(self, timeout=None):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, url, data=None, files=None, headers=None):
+            captured.update(url=url, data=data, files=files, headers=headers)
+            return _FakeResponse()
+
+    monkeypatch.setattr(httpx, "AsyncClient", _FakeClient)
+
+    model = ImageGenerationModel(
+        provider="openai_compatible",
+        model="img-model",
+        config={
+            "api_key": "k",
+            "base_url": "https://ai.example/v1",
+            "extra_headers": {"X-User-Id": "user:42"},
+        },
+    )
+    out = await model.agenerate_image_edit("same cast, new scene", [b"ref1", b"ref2"])
+    assert out == b"edited"
+    assert captured["url"] == "https://ai.example/v1/images/edits"
+    assert captured["data"]["model"] == "img-model"
+    assert captured["data"]["prompt"] == "same cast, new scene"
+    assert [f[1][1] for f in captured["files"]] == [b"ref1", b"ref2"]
+    assert all(f[0] == "image[]" for f in captured["files"])
+    # Multipart: httpx must set the boundary Content-Type itself.
+    assert "Content-Type" not in captured["headers"]
+    assert captured["headers"]["Authorization"] == "Bearer k"
+    assert captured["headers"]["X-User-Id"] == "user:42"
+
+
+@pytest.mark.asyncio
+async def test_image_edit_fails_fast_on_4xx_and_requires_references(monkeypatch):
+    """A 4xx from /images/edits means 'unsupported here' — exactly one request,
+    no retries, so callers can fall back to plain generations cheaply."""
+    import httpx
+
+    from open_notebook_creator_sdk.models import ImageGenerationModel
+
+    posts = []
+
+    class _Resp:
+        status_code = 404
+
+        def raise_for_status(self):
+            raise httpx.HTTPStatusError("404", request=None, response=self)
+
+        def json(self):
+            return {}
+
+    class _Client:
+        def __init__(self, timeout=None):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, url, data=None, files=None, headers=None):
+            posts.append(url)
+            return _Resp()
+
+    monkeypatch.setattr(httpx, "AsyncClient", _Client)
+    model = ImageGenerationModel(
+        provider="openai_compatible", model="m", config={"api_key": "k"}
+    )
+    with pytest.raises(httpx.HTTPStatusError):
+        await model.agenerate_image_edit("scene", [b"ref"])
+    assert len(posts) == 1
+
+    with pytest.raises(ValueError):
+        await model.agenerate_image_edit("scene", [])
+    assert len(posts) == 1  # no request without references

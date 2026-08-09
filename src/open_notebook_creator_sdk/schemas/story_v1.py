@@ -7,12 +7,13 @@ other page ids; a linear story is simply a graph with no choices, read in
 ``number`` order, while an adventure starts at ``start_page_id`` and follows
 the reader's picks.
 
-Illustrations are structural-SVG: each page may carry a complete, sanitized,
-self-contained ``svg`` (character/prop symbols + scene composition), so a
-character's geometry is byte-identical on every page. Settings may addi-
-tionally carry a diffusion-generated raster background (``background_data_uri``,
-stored once per setting) which renderers layer *behind* the page's vector
-scene. IMMUTABLE shape — additive optional only.
+Illustrations are diffusion-generated raster art: each page may carry a
+full-page illustration (``image_data_uri``); character identity across pages
+is anchored by a locked per-character ``visual`` spec (and, where the image
+backend supports reference conditioning, a shared cast-sheet image). Legacy
+artifacts from the structural-SVG era may instead carry a sanitized per-page
+``svg`` and per-setting ``background_data_uri`` — renderers must keep
+displaying those. IMMUTABLE shape — additive optional only.
 """
 
 from __future__ import annotations
@@ -30,6 +31,10 @@ class StoryCharacter(BaseModel):
     id: str
     name: str
     description: str = ""
+    # Canonical locked appearance spec (species/age, build, hair/features,
+    # clothing with named colors, signature accessory) embedded verbatim in
+    # every illustration prompt so identity survives across pages.
+    visual: str = ""
 
 
 class StorySetting(BaseModel):
@@ -38,9 +43,9 @@ class StorySetting(BaseModel):
     id: str
     name: str
     description: str = ""
-    # Diffusion background, stored once per setting (not per page) as a
-    # compressed data URI so view bundles and published shells stay
-    # self-contained. Renderers layer it behind the page's vector scene.
+    # Legacy (structural-SVG era): per-setting diffusion background layered
+    # behind the page's vector scene. No longer written; renderers keep it
+    # for old artifacts.
     background_data_uri: Optional[str] = None
 
 
@@ -59,7 +64,10 @@ class StoryPage(BaseModel):
     text: str
     setting_id: Optional[str] = None
     character_ids: List[str] = Field(default_factory=list)
-    svg: Optional[str] = None  # standalone sanitized illustration SVG
+    # Full-page diffusion illustration, stored as a compressed data URI so
+    # view bundles and published shells stay self-contained.
+    image_data_uri: Optional[str] = None
+    svg: Optional[str] = None  # legacy sanitized SVG; no longer written
     choices: List[StoryChoice] = Field(default_factory=list)
     is_ending: bool = False
 

@@ -88,14 +88,6 @@ class ImageGenerationModel:
         diffusion backends flake transiently and a background image is not
         worth failing a whole creation over. 4xx raises immediately (a bad
         request won't get better by retrying)."""
-        import asyncio
-        import base64
-
-        import httpx  # optional dependency of image-consuming creators
-
-        headers = {"Content-Type": "application/json", **self._extra_headers}
-        if self._api_key:
-            headers["Authorization"] = f"Bearer {self._api_key}"
         payload = {
             "model": self.model,
             "prompt": prompt,
@@ -103,6 +95,60 @@ class ImageGenerationModel:
             "size": size,
             "response_format": "b64_json",
         }
+        return await self._post_images("/images/generations", json_payload=payload)
+
+    async def agenerate_image_edit(
+        self, prompt: str, images: List[bytes], size: str = "1024x1024"
+    ) -> bytes:
+        """Generate one image conditioned on reference image(s) via the
+        OpenAI-shaped ``/images/edits`` endpoint; returns raw image bytes.
+
+        Not every gateway or model exposes edits — callers should treat a 4xx
+        as "unsupported" and fall back to :meth:`agenerate_image`. Retry
+        semantics match ``agenerate_image``."""
+        if not images:
+            raise ValueError("agenerate_image_edit requires at least one reference image")
+        form = {
+            "model": self.model,
+            "prompt": prompt,
+            "n": "1",
+            "size": size,
+            "response_format": "b64_json",
+        }
+        files = [
+            ("image[]", (f"reference-{i}.png", img, "image/png"))
+            for i, img in enumerate(images)
+        ]
+        return await self._post_images("/images/edits", form=form, files=files)
+
+    async def _post_images(
+        self,
+        path: str,
+        *,
+        json_payload: Optional[Dict[str, Any]] = None,
+        form: Optional[Dict[str, str]] = None,
+        files: Optional[List[Any]] = None,
+    ) -> bytes:
+        """POST to an Images API endpoint with retry, and decode the response.
+
+        JSON body when ``json_payload`` is given; multipart otherwise (httpx
+        must set the multipart Content-Type itself, so it is only forced for
+        JSON)."""
+        import asyncio
+        import base64
+
+        import httpx  # optional dependency of image-consuming creators
+
+        headers = dict(self._extra_headers)
+        kwargs: Dict[str, Any] = {"headers": headers}
+        if json_payload is not None:
+            headers["Content-Type"] = "application/json"
+            kwargs["json"] = json_payload
+        else:
+            kwargs["data"] = form
+            kwargs["files"] = files
+        if self._api_key:
+            headers["Authorization"] = f"Bearer {self._api_key}"
         body = None
         last_error: Exception | None = None
         for attempt in range(self._MAX_ATTEMPTS):
@@ -110,11 +156,7 @@ class ImageGenerationModel:
                 await asyncio.sleep(self._BACKOFF_BASE_S * 2 ** (attempt - 1))
             try:
                 async with httpx.AsyncClient(timeout=self._timeout) as client:
-                    resp = await client.post(
-                        f"{self._base_url}/images/generations",
-                        json=payload,
-                        headers=headers,
-                    )
+                    resp = await client.post(f"{self._base_url}{path}", **kwargs)
                 if resp.status_code >= 500:
                     resp.raise_for_status()  # raises HTTPStatusError -> retried
                 resp.raise_for_status()  # 4xx raises here and is NOT retried
