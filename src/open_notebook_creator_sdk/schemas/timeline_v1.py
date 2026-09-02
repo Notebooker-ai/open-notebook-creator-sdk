@@ -1,8 +1,8 @@
-"""timeline.v1 — a chronological timeline rendered client-side (vis-timeline).
+"""timeline.v1 — a chronological timeline rendered client-side.
 
 Data-only (no files): the LLM produces a set of dated items (and optional lane
-groups) shaped to the vis-timeline DataSet. The frontend builds the interactive
-timeline directly from ``items``/``groups``. IMMUTABLE shape — additive optional only.
+groups); the creator's view bundle renders them. IMMUTABLE shape — additive
+optional only.
 """
 
 from __future__ import annotations
@@ -22,7 +22,8 @@ class TimelineItem(BaseModel):
     start: str  # ISO date/datetime or year
     end: Optional[str] = None  # set for ranges
     group: Optional[str] = None  # lane id (matches a TimelineGroup.id)
-    type: Optional[str] = None  # vis-timeline item type: point|range|box|background
+    type: Optional[str] = None  # point|range|box|background
+    detail: Optional[str] = None  # one short line of context under the label
 
 
 class TimelineGroup(BaseModel):

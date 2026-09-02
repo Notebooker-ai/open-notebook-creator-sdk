@@ -404,3 +404,19 @@ async def test_image_edit_fails_fast_on_4xx_and_requires_references(monkeypatch)
     with pytest.raises(ValueError):
         await model.agenerate_image_edit("scene", [])
     assert len(posts) == 1  # no request without references
+
+
+def test_timeline_item_carries_optional_detail():
+    """A timeline row shows a label and, under it, one short line of context —
+    "Battle of Poitiers / King John captured". The field is optional and
+    additive, so artifacts written before it still validate unchanged."""
+    from open_notebook_creator_sdk.schemas.timeline_v1 import TimelineItem
+
+    with_detail = TimelineItem(
+        id="e1", content="Battle of Poitiers", start="1356-09-19",
+        detail="King John captured",
+    )
+    assert with_detail.detail == "King John captured"
+
+    without = TimelineItem(id="e2", content="Truce of Bordeaux", start="1357-03-22")
+    assert without.detail is None
