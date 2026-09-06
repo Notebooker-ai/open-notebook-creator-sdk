@@ -199,6 +199,16 @@ class ContentBundle(BaseModel):
     )
 
 
+#: What a produced file is *for*. ``output`` is the deliverable (rendered HTML,
+#: PDF, exports). ``source`` is the editable text the output was rendered from
+#: (a ``.qmd``, a mermaid string, an AntV spec) — the host shows it in its
+#: source editor and hands it back through :meth:`BaseCreator.render`. ``asset``
+#: is a non-editable input the render needs on disk next to the source (e.g. an
+#: SVG the ``.qmd`` references by relative path); the host restores it before
+#: calling ``render`` and never lists it as a download.
+FileRole = Literal["output", "source", "asset"]
+
+
 class CreationFile(BaseModel):
     """A file a creator produced. ``path`` MUST be relative and contained within
     ``CreationRequest.output_dir`` — the host validates this before upload."""
@@ -207,6 +217,7 @@ class CreationFile(BaseModel):
     content_type: str
     path: str
     label: Optional[str] = None
+    role: FileRole = "output"
 
 
 class CreationRequest(BaseModel):
@@ -216,6 +227,36 @@ class CreationRequest(BaseModel):
     instructions: Optional[str] = None
     config: Dict[str, Any] = Field(default_factory=dict)
     models: Dict[str, ModelRole] = Field(default_factory=dict)
+    output_dir: str
+    artifact_id: str
+    language: Optional[str] = None
+    user_id: Optional[str] = None
+
+
+class SourceDoc(BaseModel):
+    """One editable source document, as text. ``filename`` matches the
+    ``role="source"`` :class:`CreationFile` it came from."""
+
+    filename: str
+    content_type: str
+    content: str
+
+
+class RenderRequest(BaseModel):
+    """Everything a creator needs to re-render an existing artifact from
+    (possibly user-edited) source. Deterministic: no models are provided, so a
+    ``render`` must never call an LLM.
+
+    ``data`` is the artifact's *previous* ``CreationResult.data`` — creators
+    carry forward whatever the source does not encode (titles, chapter
+    metadata) and replace what it does. The host writes every ``source`` and
+    ``asset`` file into ``output_dir`` before calling ``render``, so relative
+    references between them resolve exactly as they did at generation time.
+    """
+
+    sources: List[SourceDoc]
+    config: Dict[str, Any] = Field(default_factory=dict)
+    data: Dict[str, Any] = Field(default_factory=dict)
     output_dir: str
     artifact_id: str
     language: Optional[str] = None

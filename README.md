@@ -47,6 +47,7 @@ may declare:
 | `has_custom_form` | The frontend ships a bespoke config form instead of rendering `config_schema`. |
 | `view` | A self-contained HTML view bundle (`CreatorView(entry="view/index.html")`) the plugin ships and the host renders in a sandboxed iframe. |
 | `suggestion_hint` | Steers the host's "Suggest" button on the *additional instructions* field. |
+| `editable_source` | The creator attaches its editable source as `role="source"` files and implements `render()`, so the host offers *edit source → re-render* on finished artifacts (see below). |
 
 `suggestion_hint` is a **noun phrase naming what a useful instruction for this
 artifact decides** — the artifact's shape, not the content's meaning. The host
@@ -67,6 +68,36 @@ return self.build_manifest(
 
 Omit it and the host falls back to a generic prompt — every field above is
 optional and defaults to `None`/`False`, so older manifests keep validating.
+
+## Editing after generation (`render`)
+
+A creator whose output is rendered from text (a Quarto `.qmd`, a mermaid
+mindmap, an AntV spec) can let users tweak that text later. Opt in by:
+
+1. Attaching the source to the result as `CreationFile(..., role="source")`
+   (and anything the render needs on disk next to it — e.g. SVGs the `.qmd`
+   references — as `role="asset"`). Both stay stored with the artifact; only
+   `output` files are offered as downloads or shown publicly.
+2. Implementing `async def render(self, request: RenderRequest) -> CreationResult`
+   and setting `editable_source=True` in the manifest.
+
+`render` is **deterministic** — it receives no models and must not call an LLM.
+The host writes every `source`/`asset` file into `request.output_dir` first
+(with the user's edits applied), passes the source texts as `request.sources`
+and the artifact's previous `data` as `request.data`, then persists the result
+in place of the old one. Return the full file set the artifact should now
+have: the outputs you rendered **plus** the `source`/`asset` files as they sit
+in `output_dir`, so the host keeps them for the next edit.
+
+```python
+async def render(self, request: RenderRequest) -> CreationResult:
+    out = Path(request.output_dir)
+    files, warnings, errors, rendered = await self._render_formats(out, cfg)
+    files.append(CreationFile(filename="doc.qmd", content_type="text/markdown",
+                              path="doc.qmd", role="source", label="Source"))
+    return CreationResult(status="SUCCESS", schema_id="essay.v1",
+                          data={**request.data, "formats": rendered}, files=files)
+```
 
 ## Versioned schemas
 

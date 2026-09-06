@@ -13,7 +13,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Type
 
 from pydantic import BaseModel, Field
 
-from .models import CreationRequest, CreationResult
+from .models import CreationRequest, CreationResult, RenderRequest
 
 
 class ModelRoleSpec(BaseModel):
@@ -76,6 +76,16 @@ class CreatorManifest(BaseModel):
         default=None,
         description="self-contained HTML view bundle the plugin ships and the host iframes",
     )
+    #: True when the creator attaches its editable source as ``role="source"``
+    #: files and implements :meth:`BaseCreator.render`, so the host can offer
+    #: "edit source → re-render" on finished artifacts.
+    editable_source: bool = Field(
+        default=False,
+        description=(
+            "creator emits role='source' files and implements render(), so the "
+            "host may offer post-generation source editing + re-render"
+        ),
+    )
     #: What a useful "additional instructions" text for this artifact decides — a
     #: noun phrase the host injects into its suggest-instructions prompt, e.g.
     #: "which chronological thread to trace, the time span to cover, and how to
@@ -104,6 +114,19 @@ class BaseCreator(ABC):
 
     @abstractmethod
     async def generate(self, request: CreationRequest) -> CreationResult: ...
+
+    async def render(self, request: RenderRequest) -> CreationResult:
+        """Re-render an artifact from its (edited) source files. Deterministic —
+        no LLM. Override and set ``manifest.editable_source=True`` to opt in;
+        the host only calls this for creators that declare the flag.
+
+        Return the full file set the artifact should now have: the ``output``
+        files you rendered, plus the ``source``/``asset`` files exactly as they
+        sit in ``output_dir`` (re-declare them so the host keeps them).
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} does not support re-rendering from source"
+        )
 
     # --- convenience -------------------------------------------------------
 

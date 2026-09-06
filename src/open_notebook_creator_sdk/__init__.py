@@ -14,7 +14,10 @@ from .models import (
     CreationRequest,
     CreationResult,
     CreationStatus,
+    FileRole,
     ModelRole,
+    RenderRequest,
+    SourceDoc,
 )
 from .schemas import (
     SCHEMA_REGISTRY,
@@ -22,7 +25,7 @@ from .schemas import (
     validate_artifact_data,
 )
 
-__version__ = "0.10.0"
+__version__ = "0.12.0"
 
 #: Entry-point group plugins register under (used for dev discovery / warnings).
 ENTRY_POINT_GROUP = "open_notebook.creators"
@@ -43,6 +46,9 @@ __all__ = [
     "CreationResult",
     "CreationError",
     "CreationStatus",
+    "FileRole",
+    "RenderRequest",
+    "SourceDoc",
     # schemas
     "SCHEMA_REGISTRY",
     "get_schema",
