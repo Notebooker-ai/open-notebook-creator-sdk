@@ -25,7 +25,7 @@ from .schemas import (
     validate_artifact_data,
 )
 
-__version__ = "0.12.0"
+__version__ = "0.12.1"
 
 #: Entry-point group plugins register under (used for dev discovery / warnings).
 ENTRY_POINT_GROUP = "open_notebook.creators"

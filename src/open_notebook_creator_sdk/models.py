@@ -12,6 +12,28 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
+def normalize_text_response(response):
+    """Normalize provider text blocks without exposing reasoning or signatures.
+
+    Creation language roles produce text/JSON. Preserve usage, tool calls and
+    response metadata, and avoid mutating the provider's original message.
+    """
+    content = getattr(response, "content", None)
+    if not isinstance(content, list):
+        return response
+    text = "\n".join(
+        part["text"]
+        for part in content
+        if isinstance(part, dict)
+        and part.get("type") == "text"
+        and isinstance(part.get("text"), str)
+        and not part.get("thought")
+    )
+    if not text.strip():
+        raise ValueError("The language model returned no usable text content")
+    return response.model_copy(update={"content": text})
+
+
 class ModelRole(BaseModel):
     """A resolved model the host hands to a creator for one declared role.
 
@@ -34,17 +56,25 @@ class ModelRole(BaseModel):
         from esperanto import AIFactory  # optional extra
 
         config = {**self.config, **extra_config}
-        return AIFactory.create_language(
+        usage_callback = config.pop("usage_callback", None)
+        from langchain_core.runnables import RunnableLambda
+
+        model = AIFactory.create_language(
             self.provider, self.model, config=config
         ).to_langchain()
+
+        def normalize_and_record(response):
+            if usage_callback is not None:
+                usage_callback(dict(getattr(response, "usage_metadata", None) or {}))
+            return normalize_text_response(response)
+
+        return model | RunnableLambda(normalize_and_record)
 
     def create_text_to_speech(self, **extra_config: Any):
         from esperanto import AIFactory  # optional extra
 
         config = {**self.config, **extra_config}
-        return AIFactory.create_text_to_speech(
-            self.provider, self.model, config=config
-        )
+        return AIFactory.create_text_to_speech(self.provider, self.model, config=config)
 
     def create_image(self, **extra_config: Any) -> "ImageGenerationModel":
         """Build an image-generation client speaking the OpenAI Images API
@@ -67,7 +97,9 @@ class ImageGenerationModel:
         self.provider = provider
         self.model = model
         self._api_key = config.get("api_key")
-        self._base_url = (config.get("base_url") or "https://api.openai.com/v1").rstrip("/")
+        self._base_url = (config.get("base_url") or "https://api.openai.com/v1").rstrip(
+            "/"
+        )
         self._timeout = float(config.get("timeout", 120))
         # Per-user attribution headers the host injects into every model
         # config (e.g. X-User-Id, which the Notebooker gateway REQUIRES —
@@ -107,7 +139,9 @@ class ImageGenerationModel:
         as "unsupported" and fall back to :meth:`agenerate_image`. Retry
         semantics match ``agenerate_image``."""
         if not images:
-            raise ValueError("agenerate_image_edit requires at least one reference image")
+            raise ValueError(
+                "agenerate_image_edit requires at least one reference image"
+            )
         form = {
             "model": self.model,
             "prompt": prompt,
